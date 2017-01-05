@@ -12,6 +12,7 @@ SDL_Window *g_window = NULL;
 SDL_Surface *g_screen_surface = NULL;
 SDL_Surface *g_stretched_surface = NULL;
 SDL_Surface *g_x = NULL;
+SDL_Surface *g_o = NULL;
 
 int init();
 int load_media();
@@ -19,6 +20,9 @@ void app_close();
 SDL_Surface *load_surface(char *path);
 void mark_x(int, int);
 void fill_in_markers();
+
+int cpu_needs_to_move = 0;
+void cpu_move();
 
 int main(int argc, char *args[])
 {
@@ -65,6 +69,8 @@ int main(int argc, char *args[])
                          }
                     }
 
+                    cpu_move();
+
                     SDL_Rect stretch_rect;
                     stretch_rect.x = 0;
                     stretch_rect.y = 0;
@@ -89,10 +95,26 @@ int markers[3][3] = {{0,0,0},
                      {0,0,0},
                      {0,0,0}};
 
-void mark_x(int x, int y) {
+void mark_x(int x, int y)
+{
      printf("%d, %d\n", x, y);
-     if (markers[x-1][y-1] == 0)
+     if (markers[x-1][y-1] == 0) {
           markers[x-1][y-1] = 1;
+          cpu_needs_to_move = 1;
+     }
+}
+
+void cpu_move()
+{
+     int x, y;
+     while (cpu_needs_to_move) {
+          x = rand() % 3;
+          y = rand() % 3;
+          if (markers[x][y] == 0){
+               markers[x][y] = -1;
+               cpu_needs_to_move = 0;
+          }
+     }
 }
 
 
@@ -100,13 +122,16 @@ void fill_in_markers()
 {
      for (int i=0; i < 3; i++) {
           for (int j=0; j < 3; j++) {
-               if (markers[i][j] == 1) {
+               if (markers[i][j] != 0) {
                          SDL_Rect stretch_rect;
                          stretch_rect.x = BUTTON_WIDTH * i;
                          stretch_rect.y = BUTTON_HEIGHT * j;
                          stretch_rect.w = BUTTON_WIDTH;
                          stretch_rect.h = BUTTON_HEIGHT;
-                         SDL_BlitScaled(g_x, NULL, g_screen_surface, &stretch_rect);
+                         if (markers[i][j] == 1)
+                              SDL_BlitScaled(g_x, NULL, g_screen_surface, &stretch_rect);
+                         else
+                              SDL_BlitScaled(g_o, NULL, g_screen_surface, &stretch_rect);
                     }
           }
      }
@@ -121,7 +146,7 @@ int init()
           success = 0;
      }
      else {
-          g_window = SDL_CreateWindow("SDL Tutorial",
+          g_window = SDL_CreateWindow("Tic Tac Toe!",
                                     SDL_WINDOWPOS_UNDEFINED,
                                     SDL_WINDOWPOS_UNDEFINED,
                                     SCREEN_WIDTH,
@@ -149,6 +174,7 @@ int load_media()
 
      // load icons
      g_x = load_surface("../snake/x_icon.bmp");
+     g_o = load_surface("../snake/o_icon.bmp");
 
      return success;
 }
